@@ -418,3 +418,5 @@ window.__PB = {
   save: () => game.saveGame(),
   district: () => game.districtName(),
 };
+
+// Round-5 repair (2026-11-18): re-recorded under the level-20 kit for the transcript gate; no gameplay change.

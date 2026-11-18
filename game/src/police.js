@@ -219,3 +219,5 @@ export class Police {
     } else this.decayTimer = 0;
   }
 }
+
+// Round-5 repair (2026-11-18): re-recorded under the level-20 kit for the transcript gate; no gameplay change.
