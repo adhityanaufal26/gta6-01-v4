@@ -144,14 +144,15 @@ export class Police {
         c.speed += (top - c.speed) * 0.7 * dt;
         c.x += Math.sin(c.heading) * c.speed * dt;
         c.z += Math.cos(c.heading) * c.speed * dt;
-        // ram the player car
+        // ram the player car (dt-scaled nudge, not a per-frame shove)
         const pc = p.car;
         if (pc && Math.hypot(c.x - pc.x, c.z - pc.z) < 3.4) {
-          pc.speed *= 0.86;
-          pc.x += Math.sin(c.heading) * 2.2; pc.z += Math.cos(c.heading) * 2.2;
+          pc.speed *= Math.max(0.7, 1 - 0.6 * dt);
+          pc.x += Math.sin(c.heading) * 6 * dt; pc.z += Math.cos(c.heading) * 6 * dt;
           this.game.damagePlayer(12 * dt);
-          this.game.audio.crash();
-        }
+          if (!c._ramming && Math.abs(pc.speed) > 8) this.game.audio.crash();
+          c._ramming = true;
+        } else c._ramming = false;
         // foot player hit
         if (!pc && Math.hypot(c.x - pos.x, c.z - pos.z) < 2.4) {
           this.game.damagePlayer(8 * dt);
@@ -185,8 +186,10 @@ export class Police {
       const h = this.heli;
       h.userData.rotor.rotation.y += dt * 22;
       const dx = pos.x - h.position.x, dz = pos.z - h.position.z;
-      h.position.x += dx * 0.55 * dt; h.position.z += dz * 0.55 * dt;
-      h.position.y = 52 + Math.sin(performance.now() * 0.001) * 2;
+      if (!this.game.coverCam) { // cover shot: keep the staged heli in frame
+        h.position.x += dx * 0.55 * dt; h.position.z += dz * 0.55 * dt;
+      }
+      h.position.y = (this.game.coverCam ? 14 : 52) + Math.sin(performance.now() * 0.001) * 2;
       h.rotation.y = Math.atan2(dx, dz);
       if (wanted === 0) this.clearHelicopter();
     }

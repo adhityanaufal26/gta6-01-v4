@@ -23,7 +23,7 @@ export class Radio {
   }
   turnOff() { this.station = -1; }
   update(dt) {
-    if (this.station < 0) return;
+    if (this.station < 0 || !this.game.player.car) return; // radio plays in a car
     this._acc += dt;
     const stepDur = 0.21;
     while (this._acc >= stepDur) {

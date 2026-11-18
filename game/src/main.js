@@ -181,13 +181,12 @@ export class Game {
     }
     const car = this.vehicles.nearestCar(p.x, p.z, 5);
     if (!car) { this.hud.toast('No car close enough — walk up to one.', 1500); return; }
-    const wasTraffic = car.kind === 'traffic';
     this.vehicles.steal(car);
     p.car = car; p.onFoot = false;
     this.stats.carsStolen += 1;
     this.audio.blip(440, 0.1, 'square', 0.15);
     this.hud.toast('Stole the ' + car.cls.name + ' — nice wheels.', 2000);
-    if (wasTraffic) this.addWanted(1, 'car theft');
+    this.addWanted(1, 'car theft');
     this.saveGame();
   }
   tryInteract() {
@@ -205,13 +204,21 @@ export class Game {
       const cls = CAR_CLASSES.find((c) => c.id === 'sports');
       const car = this.vehicles.parked[0];
       car.cls = cls;
+      car.mesh.children[0].material.color.setHex(cls.color); // repaint the mesh to sports yellow
       this.vehicles.steal(car);
       this.player.car = car; this.player.onFoot = false;
       car.x = 0; car.z = 40; car.heading = Math.PI; car.speed = 18;
       car.mesh.position.set(0, 0, 40);
+      this.coverCam = true; // closer chase cam for the cover frame
       this.clock = 17 * 60 + 35;
       this.police.setWanted(5, 'shot');
-      this.police.spawnPoliceCar(); this.police.spawnPoliceCar();
+      // stage the chase in frame: two police cars ahead of the player car,
+      // helicopter overhead ahead, roadblock further up the road.
+      const pc1 = this.police.spawnPoliceCar();
+      pc1.x = -6; pc1.z = 12; pc1.speed = 18; pc1.heading = Math.PI;
+      const pc2 = this.police.spawnPoliceCar();
+      pc2.x = 7; pc2.z = 24; pc2.speed = 18; pc2.heading = Math.PI;
+      if (this.police.heli) this.police.heli.position.set(0, 14, -10);
       this.police.spawnRoadblock();
       this.missions.active = { def: MISSIONS[7], stepIdx: 1, t: 12, stepT: 12 };
       this.missions.waypoint = { x: 0, z: -200, label: 'La Colina Hideout' };
@@ -347,6 +354,7 @@ export class Game {
     const heading = p.heading;
     const cam = this.camera;
     let dist = 13, height = 6, lookY = 2;
+    if (this.coverCam) { dist = 9.5; height = 4.4; }
     if (this.cameraMode === 1) { dist = 20; height = 9; }
     if (this.cameraMode === 2) { dist = 1; height = 55; lookY = 0; }
     const tx = pos.x - Math.sin(heading) * dist;

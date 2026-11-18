@@ -42,18 +42,30 @@ export class Vehicles {
     this.spawnTraffic(26);
     this.spawnParked(14);
   }
+  // A spawn point is free when the collision solver leaves it (almost) alone.
+  freeSpot(x, z) {
+    const f = this.game.city.collideCircle(x, z, 3);
+    return Math.hypot(f.x - x, f.z - z) < 0.5;
+  }
   spawnTraffic(n) {
     for (let i = 0; i < n; i++) {
       const cls = CAR_CLASSES[Math.floor(Math.random() * CAR_CLASSES.length)];
       const mesh = buildCarMesh(cls);
       const road = (Math.floor(Math.random() * 9) - 4) * 80;
-      const along = (Math.random() * 2 - 1) * 360;
+      let along = (Math.random() * 2 - 1) * 360;
       const horizontal = Math.random() > 0.5;
+      let x = horizontal ? along : road + (Math.random() > 0.5 ? 4 : -4);
+      let z = horizontal ? road + (Math.random() > 0.5 ? 4 : -4) : along;
+      for (let tries = 0; tries < 10 && !this.freeSpot(x, z); tries++) {
+        along = (Math.random() * 2 - 1) * 360;
+        x = horizontal ? along : road + (Math.random() > 0.5 ? 4 : -4);
+        z = horizontal ? road + (Math.random() > 0.5 ? 4 : -4) : along;
+      }
       const car = {
-        mesh, cls, kind: 'traffic',
-        x: horizontal ? along : road + (Math.random() > 0.5 ? 4 : -4),
-        z: horizontal ? road + (Math.random() > 0.5 ? 4 : -4) : along,
-        heading: horizontal ? (Math.random() > 0.5 ? 0 : Math.PI) : (Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2),
+        mesh, cls, kind: 'traffic', x, z,
+        // heading convention: x += sin(h), z += cos(h). A car on a horizontal
+        // road (running along x) heads ±90°; on a vertical road it heads 0/180°.
+        heading: horizontal ? (Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2) : (Math.random() > 0.5 ? 0 : Math.PI),
         speed: 8 + Math.random() * 6, driver: true,
         horizontal, road, lane: Math.random() > 0.5 ? 4 : -4,
       };
@@ -66,12 +78,18 @@ export class Vehicles {
       const cls = CAR_CLASSES[Math.floor(Math.random() * CAR_CLASSES.length)];
       const mesh = buildCarMesh(cls);
       const road = (Math.floor(Math.random() * 9) - 4) * 80;
-      const along = (Math.random() * 2 - 1) * 340;
+      let along = (Math.random() * 2 - 1) * 340;
       const horizontal = Math.random() > 0.5;
+      let x = horizontal ? along : road + 7;
+      let z = horizontal ? road + 7 : along;
+      for (let tries = 0; tries < 10 && !this.freeSpot(x, z); tries++) {
+        along = (Math.random() * 2 - 1) * 340;
+        x = horizontal ? along : road + 7;
+        z = horizontal ? road + 7 : along;
+      }
       const car = {
-        mesh, cls, kind: 'parked',
-        x: horizontal ? along : road + 7, z: horizontal ? road + 7 : along,
-        heading: horizontal ? 0 : Math.PI / 2, speed: 0, driver: false,
+        mesh, cls, kind: 'parked', x, z,
+        heading: horizontal ? Math.PI / 2 : 0, speed: 0, driver: false,
       };
       mesh.position.set(car.x, 0, car.z); mesh.rotation.y = car.heading;
       this.scene.add(mesh); this.parked.push(car);

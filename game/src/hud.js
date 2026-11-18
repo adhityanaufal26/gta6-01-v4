@@ -14,8 +14,8 @@ export class Hud {
     this.minimapZoom = 1;
     this._toastTimer = null;
     this.renderJobList();
-    document.getElementById('btnContinue').addEventListener('click', () => this.game.startGame(true));
-    document.getElementById('btnNew').addEventListener('click', () => this.game.startGame(false));
+    document.getElementById('btnContinue').addEventListener('click', () => this.game.startGame(false));
+    document.getElementById('btnNew').addEventListener('click', () => this.game.startGame(true));
     document.getElementById('btnHow').addEventListener('click', () => {
       this.toast('WASD drive, E steal cars, click to shoot, R radio, F shops, M minimap, Esc pause. Finish all 10 jobs!', 5000);
     });

@@ -251,10 +251,12 @@ export class Missions {
       const m = g.city.markers[step.at];
       const d = Math.hypot(m.x - pos.x, m.z - pos.z);
       if (d < 8) {
-        // reaching the hideout/safehouse at 5 stars clears the heat (jobs 7 + 9);
-        // the Dragnet job (6) requires losing the heat first, since it can decay at 3 stars.
-        if (g.player.wanted > 0 && (a.def.id === 7 || a.def.id === 9)) g.police.setWanted(0, 'escaped');
-        else if (g.player.wanted > 0) { g.hud.setObjective(a.def.name, step.label + ' — lose the heat first! (' + g.player.wanted + '★)'); return; }
+        if (step.type === 'escape') {
+          // reaching the hideout/safehouse at 5 stars clears the heat (jobs 7 + 9);
+          // the Dragnet job (6) requires losing the heat first, since it can decay at 3 stars.
+          if (g.player.wanted > 0 && (a.def.id === 7 || a.def.id === 9)) g.police.setWanted(0, 'escaped');
+          else if (g.player.wanted > 0) { g.hud.setObjective(a.def.name, step.label + ' — lose the heat first! (' + g.player.wanted + '★)'); return; }
+        }
         this.advanceStep();
       } else if (step.type === 'escape' && g.player.wanted > 0 && a.def.id !== 7 && a.def.id !== 9) {
         g.hud.setObjective(a.def.name, step.label + ' — lose the heat first! (' + g.player.wanted + '★)');

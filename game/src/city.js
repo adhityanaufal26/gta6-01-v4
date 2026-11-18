@@ -87,9 +87,11 @@ export class City {
         if (bx === -3 && bz === -3) continue; // Solano Park
         const n = 2 + Math.floor(rnd() * 3);
         for (let k = 0; k < n; k++) {
-          const w = 14 + rnd() * 18, d = 14 + rnd() * 18;
+          // Buildings stay inside the block interior (within 30 of the block
+          // centre) so they never jut into the road strips.
+          const w = 14 + rnd() * 14, d = 14 + rnd() * 14;
           const h = 8 + rnd() * rnd() * 46;
-          const x = cx - 22 + rnd() * (44 - w), z = cz - 22 + rnd() * (44 - d);
+          const x = cx - 16 + rnd() * (32 - w), z = cz - 16 + rnd() * (32 - d);
           const color = PALETTE[Math.floor(rnd() * PALETTE.length)];
           const b = this.box(w, h, d, color, x, h / 2, z);
           this.buildings.push(b);
@@ -111,14 +113,14 @@ export class City {
     park.rotation.x = -Math.PI / 2; park.position.set(-280, 0.15, -280); this.scene.add(park);
     const pond = new T.Mesh(new T.CircleGeometry(14, 24), new T.MeshLambertMaterial({ color: 0x2e8fb8 }));
     pond.rotation.x = -Math.PI / 2; pond.position.set(-280, 0.2, -280); this.scene.add(pond);
-    // Port (east): containers + cranes
+    // Port (east): containers + cranes — kept clear of the x=320 road strip.
     for (let i = 0; i < 14; i++) {
-      const cx = 330 + (i % 4) * 16, cz = 120 + Math.floor(i / 4) * 18;
+      const cx = 342 + (i % 4) * 16, cz = 120 + Math.floor(i / 4) * 18;
       this.box(13, 5, 6, [0xd94f30, 0x2e7fc9, 0xe8a33d, 0x3aa655][i % 4], cx, 2.5, cz, { ry: 0.2 });
       this.colliders.push({ x: cx, z: cz, hx: 7, hz: 4 });
     }
     for (let i = 0; i < 3; i++) {
-      const cx = 360, cz = 60 + i * 90;
+      const cx = 372, cz = 60 + i * 90;
       this.box(4, 42, 4, 0xe8b04b, cx, 21, cz);
       this.box(34, 4, 4, 0xe8b04b, cx - 14, 40, cz);
       this.colliders.push({ x: cx, z: cz, hx: 3, hz: 3 });
@@ -145,13 +147,14 @@ export class City {
     // Boardwalk planks along the beach
     const walk = new T.Mesh(new T.PlaneGeometry(860, 12), new T.MeshLambertMaterial({ color: 0xc9a06a }));
     walk.rotation.x = -Math.PI / 2; walk.position.set(0, 0.12, 398); this.scene.add(walk);
-    // Named markers (shops / mission spots) — all on roads, reachable
+    // Named markers (shops / mission spots) — all ON roads (x or z a multiple
+    // of 80) or in open areas (beach, park), so cars can always reach them.
     this.markers = {
-      garage: { x: -40, z: 40, label: 'Voss Garage' },
-      shop: { x: 120, z: -40, label: 'Harbor Arms' },
-      safehouse: { x: -200, z: 200, label: 'Marina Safehouse' },
+      garage: { x: 0, z: 40, label: 'Voss Garage' },
+      shop: { x: 120, z: 0, label: 'Harbor Arms' },
+      safehouse: { x: -240, z: 200, label: 'Marina Safehouse' },
       chopshop: { x: 320, z: 240, label: 'Reyes Chop Shop' },
-      spray: { x: 40, z: -200, label: 'Spray Works' },
+      spray: { x: 0, z: -200, label: 'Spray Works' },
       port: { x: 320, z: 160, label: 'Portside Docks' },
       bank: { x: 0, z: -120, label: 'Bay Trust Bank' },
       hideout: { x: -320, z: -320, label: 'La Colina Hideout' },
@@ -167,11 +170,14 @@ export class City {
       base.position.set(m.x, 0.25, m.z); this.scene.add(base);
       m.pillar = pillar;
     }
-    // 25 collectible packages (glowing orange boxes) scattered on sidewalks/roads
-    const crnd = mulberry(777);
+    // 25 collectible packages (glowing orange boxes) — all placed ON roads
+    // so every one is reachable by car or on foot.
     for (let i = 0; i < 25; i++) {
-      const x = Math.round((crnd() * 2 - 1) * 360 / 40) * 40 + (crnd() > 0.5 ? 12 : -12);
-      const z = Math.round((crnd() * 2 - 1) * 360 / 40) * 40 + (crnd() > 0.5 ? 12 : -12);
+      const horizontal = i % 2 === 0;
+      const road = (Math.floor(i / 2) % 9 - 4) * 80;
+      const along = (((i * 37) % 17) - 8) * 40;
+      const x = horizontal ? along + 4 : road + 4;
+      const z = horizontal ? road + 4 : along + 4;
       const pkg = new T.Mesh(new T.BoxGeometry(1.6, 1.2, 1.6), new T.MeshBasicMaterial({ color: 0xff7a1a }));
       pkg.position.set(x, 1.2, z); this.scene.add(pkg);
       const glow = new T.Mesh(new T.SphereGeometry(2.4, 10, 8), new T.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.3 }));
