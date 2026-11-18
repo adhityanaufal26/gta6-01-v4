@@ -3,17 +3,137 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>Palmera Bay — 3D open-world crime: 10 story jobs, roadblocks, helicopter police, radio, shops &amp; saves</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1c2c; font-family: Verdana, Geneva, sans-serif; }
   #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
+  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; text-shadow: 0 1px 3px #000; display: none; }
+  #hud .panel { background: rgba(8, 24, 38, .72); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 8px 12px; }
+  #stats { position: absolute; top: 12px; left: 12px; font-size: 15px; line-height: 1.5; }
+  #wanted { position: absolute; top: 12px; right: 12px; text-align: right; font-size: 15px; }
+  #stars { font-size: 26px; letter-spacing: 4px; color: #ffd23e; }
+  #stars .off { color: rgba(255,255,255,.28); }
+  #objective { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: 520px; text-align: center; font-size: 15px; }
+  #objective b { color: #ffd23e; }
+  #weapon { position: absolute; left: 12px; bottom: 12px; font-size: 15px; line-height: 1.5; }
+  #radio { color: #7fe3ff; }
+  #speedo { position: absolute; right: 12px; bottom: 196px; font-size: 26px; font-weight: bold; }
+  #minimap { position: absolute; right: 12px; bottom: 12px; border: 2px solid rgba(255,255,255,.5); border-radius: 50%; background: rgba(8,24,38,.8); }
+  #toast { position: absolute; left: 50%; bottom: 130px; transform: translateX(-50%); font-size: 17px; background: rgba(8,24,38,.8); padding: 8px 16px; border-radius: 8px; display: none; }
+  #interact { position: absolute; left: 50%; bottom: 190px; transform: translateX(-50%); font-size: 16px; background: #ffd23e; color: #111; padding: 6px 14px; border-radius: 6px; font-weight: bold; display: none; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; display: none; }
+  #crosshair:before, #crosshair:after { content: ""; position: absolute; background: #fff; }
+  #crosshair:before { left: 8px; top: 0; width: 2px; height: 18px; }
+  #crosshair:after { left: 0; top: 8px; width: 18px; height: 2px; }
+  .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(4, 16, 28, .86); color: #fff; z-index: 10; }
+  .card { width: 1060px; max-width: 96vw; max-height: 94vh; overflow: auto; background: linear-gradient(160deg, #0e2a44, #123a2e 70%, #7a4a12); border: 2px solid #ffd23e; border-radius: 14px; padding: 22px 28px; box-sizing: border-box; }
+  .card h1 { margin: 0; font-size: 44px; letter-spacing: 2px; color: #ffd23e; }
+  .card h1 span { color: #7fe3ff; font-size: 20px; letter-spacing: 1px; }
+  .card h2 { margin: 14px 0 6px; font-size: 17px; color: #ffd23e; }
+  .card p { margin: 6px 0; font-size: 14px; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .chip { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.35); border-radius: 20px; padding: 5px 12px; font-size: 13px; }
+  .chip b { color: #ffd23e; }
+  .cols { display: flex; gap: 22px; }
+  .cols > div { flex: 1; }
+  .job { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.14); }
+  .job .done { color: #7dff9a; } .job .lock { color: #9fb3c8; }
+  .btn { pointer-events: auto; cursor: pointer; display: inline-block; background: #ffd23e; color: #111; border: none; border-radius: 8px; padding: 12px 26px; font-size: 17px; font-weight: bold; margin: 6px 8px 0 0; }
+  .btn.alt { background: #7fe3ff; } .btn.ghost { background: rgba(255,255,255,.15); color: #fff; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .shoprow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.16); }
+  .shoprow .btn { padding: 6px 14px; font-size: 13px; margin: 0; }
   #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
+<canvas id="game" aria-label="Palmera Bay: open-world 3D crime game"></canvas>
+<div id="hud">
+  <div id="stats" class="panel">$<span id="cash">0</span><br>HEALTH <span id="health">100</span> &nbsp; ARMOR <span id="armor">0</span><br><span id="district">Marina District</span> &nbsp; <span id="clock">08:00</span></div>
+  <div id="wanted" class="panel">WANTED<br><span id="stars"></span><br><span id="heat">Clear</span></div>
+  <div id="objective" class="panel"><b id="objTitle">FREE ROAM</b><br><span id="objText">Steal a car, take a job, explore Palmera Bay.</span></div>
+  <div id="weapon" class="panel"><span id="weaponName">Fists</span> &nbsp; <span id="ammo"></span><br><span id="radio">RADIO: OFF</span><br><span id="collect">Packages 0/25 &nbsp; Jumps 0/8</span></div>
+  <div id="speedo">0 mph</div>
+  <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="toast"></div>
+  <div id="interact"></div>
+  <div id="crosshair"></div>
+</div>
+
+<div id="titleScreen" class="screen">
+  <div class="card">
+    <h1>PALMERA BAY <span>3D OPEN-WORLD CRIME &mdash; 10 STORY JOBS &middot; ROADBLOCKS &middot; HELICOPTER POLICE &middot; RADIO &middot; SHOPS &amp; SAVES</span></h1>
+    <p>You are <b>Jax Marlow</b>, a newcomer driver in sun-soaked Palmera Bay. Fixer <b>Marla Voss</b> and the Bayline Crew have 10 jobs for you &mdash; from a first getaway to a two-stage heist. Steal cars, outrun the law, buy guns, tune your ride, and don't get caught.</p>
+    <div class="chips">
+      <span class="chip"><b>GOAL</b> finish all 10 jobs, earn cash, stay free</span>
+      <span class="chip"><b>DRIVE</b> WASD + Space handbrake, N nitro</span>
+      <span class="chip"><b>STEAL</b> walk up to any car, press E</span>
+      <span class="chip"><b>WANTED</b> 0&ndash;5 stars, heli + roadblocks at 4&ndash;5</span>
+      <span class="chip"><b>MISSIONS</b> 10 jobs + taxi fares + 25 packages + 8 jumps</span>
+      <span class="chip"><b>RADIO</b> R cycles 3 stations in a car</span>
+      <span class="chip"><b>SHOPS</b> F at Harbor Arms, Voss Garage, Safehouse</span>
+    </div>
+    <div class="cols">
+      <div>
+        <h2>STORY JOBS &mdash; THE BAYLINE ARC</h2>
+        <div id="jobList"></div>
+      </div>
+      <div>
+        <h2>CONTROLS</h2>
+        <p>WASD move / drive &middot; Shift run &middot; E enter, exit &amp; steal car &middot; Mouse aim, click shoot &middot; R radio &middot; Space handbrake &middot; N nitro &middot; C camera &middot; M minimap zoom &middot; F interact &middot; Esc pause &middot; X mute</p>
+        <h2>YOUR RECORD</h2>
+        <p id="bestLine">Best score: $0 &middot; Jobs done: 0/10 &middot; Packages: 0/25 &middot; Jumps: 0/8</p>
+        <p>16 districts &middot; 6 car classes &middot; 5 weapons &middot; 3 radio stations &middot; helicopter police &middot; roadblocks &middot; chop shop &middot; safehouse saves.</p>
+        <button class="btn" id="btnContinue">CONTINUE</button>
+        <button class="btn alt" id="btnNew">NEW GAME</button>
+        <button class="btn ghost" id="btnHow">HOW TO PLAY</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="briefScreen" class="screen hidden">
+  <div class="card" style="width:760px">
+    <h2 id="briefTitle" style="font-size:26px;margin:0">JOB</h2>
+    <p id="briefGiver"></p>
+    <p id="briefText"></p>
+    <p id="briefPay"></p>
+    <button class="btn" id="btnStartJob">START JOB</button>
+    <button class="btn ghost" id="btnCancelJob">NOT YET</button>
+  </div>
+</div>
+
+<div id="resultsScreen" class="screen hidden">
+  <div class="card" style="width:760px;text-align:center">
+    <h1 id="resGrade" style="font-size:64px">S</h1>
+    <h2 id="resTitle">JOB COMPLETE</h2>
+    <p id="resPay" style="font-size:20px"></p>
+    <div class="chips" id="resTiles" style="justify-content:center"></div>
+    <button class="btn" id="btnResNext">CONTINUE</button>
+  </div>
+</div>
+
+<div id="shopScreen" class="screen hidden">
+  <div class="card" style="width:680px">
+    <h2 id="shopTitle" style="font-size:26px;margin:0">SHOP</h2>
+    <p id="shopCash"></p>
+    <div id="shopItems"></div>
+    <button class="btn ghost" id="btnCloseShop">LEAVE (F)</button>
+  </div>
+</div>
+
+<div id="pauseScreen" class="screen hidden">
+  <div class="card" style="width:560px;text-align:center">
+    <h2 style="font-size:30px">PAUSED</h2>
+    <p id="pauseStats"></p>
+    <button class="btn" id="btnResume">RESUME</button>
+    <button class="btn alt" id="btnSaveQuit">SAVE &amp; TITLE</button>
+  </div>
+</div>
+
 <p id="status" role="status" aria-live="polite"></p>
+<script src="./vendor/three.min.js"></script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>
